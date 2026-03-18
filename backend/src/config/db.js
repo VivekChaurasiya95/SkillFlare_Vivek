@@ -1,23 +1,53 @@
 import mongoose from "mongoose";
+import logger from "./logger.js";
 
-// Note: dns.setServers override removed — it was a local dev workaround that
-// overrides system DNS globally. If you have local DNS issues, set the
-// MONGODB_URI to use an IP address or configure DNS at the OS level instead.
-
+// Connection pool configuration for better resource management
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 5000; // 5 seconds
+const CONNECTION_POOL_SIZE = 10; // Max connections in pool
+const CONNECTION_TIMEOUT = 30000; // 30 seconds to establish connection
 
 const connectDB = async (retries = MAX_RETRIES) => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      family: 4, // Force IPv4 – avoids IPv6 DNS delays on many networks
-    });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+      // Connection pool settings
+      maxPoolSize: CONNECTION_POOL_SIZE,
+      minPoolSize: 5,
+      maxIdleTimeMS: 45000,
 
-    // Cleanup legacy index from older schema versions.
-    // A stale unique `username` index can cause all registrations to fail with duplicate errors.
+      // Timeout and retry settings
+      serverSelectionTimeoutMS: CONNECTION_TIMEOUT,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: CONNECTION_TIMEOUT,
+      retryWrites: true,
+      retryReads: true,
+
+      // Network optimization
+      family: 4, // Force IPv4 – avoids IPv6 DNS delays on many networks
+
+      // Connection string defaults
+      authSource: "admin",
+    });
+
+    logger.info("MongoDB Connected successfully", {
+      host: conn.connection.host,
+      dbName: conn.connection.db?.databaseName,
+    });
+
+    // Handle connection events
+    mongoose.connection.on("error", (err) => {
+      logger.error("MongoDB connection error", err);
+    });
+
+    mongoose.connection.on("disconnected", () => {
+      logger.warn("MongoDB disconnected. Attempting to reconnect...");
+    });
+
+    mongoose.connection.on("reconnected", () => {
+      logger.info("MongoDB reconnected successfully");
+    });
+
+    // Cleanup legacy index from older schema versions
     try {
       const usersCollection = mongoose.connection.db.collection("users");
       const indexes = await usersCollection.indexes();
@@ -26,34 +56,26 @@ const connectDB = async (retries = MAX_RETRIES) => {
       );
       if (hasLegacyUsernameIndex) {
         await usersCollection.dropIndex("username_1");
-        console.log("Dropped legacy users.username_1 index.");
+        logger.info("Dropped legacy users.username_1 index");
       }
     } catch (indexError) {
-      console.warn("Index cleanup warning:", indexError.message);
+      logger.warn("Index cleanup warning", { error: indexError.message });
     }
-
-    // Handle connection events
-    mongoose.connection.on("error", (err) => {
-      console.error("MongoDB connection error:", err.message);
-    });
-
-    mongoose.connection.on("disconnected", () => {
-      console.warn("MongoDB disconnected. Attempting to reconnect...");
-    });
-
-    mongoose.connection.on("reconnected", () => {
-      console.log("MongoDB reconnected.");
-    });
   } catch (error) {
-    console.error(`MongoDB connection failed: ${error.message}`);
+    logger.error(
+      `MongoDB connection failed (attempt ${MAX_RETRIES - retries + 1}/${MAX_RETRIES})`,
+      error,
+    );
+
     if (retries > 0) {
-      console.log(
-        `Retrying in ${RETRY_DELAY / 1000}s... (${retries} attempts remaining)`,
-      );
+      logger.info(`Retrying in ${RETRY_DELAY / 1000}s...`, {
+        retriesRemaining: retries,
+      });
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
       return connectDB(retries - 1);
     }
-    console.error("Max retries reached. Exiting.");
+
+    logger.critical("Max retries reached. Unable to connect to MongoDB");
     process.exit(1);
   }
 };

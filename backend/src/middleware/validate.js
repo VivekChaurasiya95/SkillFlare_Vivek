@@ -13,7 +13,10 @@ export const validate = (rules) => {
       const value = req.body[rule.field];
 
       // Check required
-      if (rule.required && (value === undefined || value === null || value === '')) {
+      if (
+        rule.required &&
+        (value === undefined || value === null || value === "")
+      ) {
         errors.push(rule.message || `${rule.field} is required`);
         continue;
       }
@@ -22,23 +25,23 @@ export const validate = (rules) => {
       if (value === undefined || value === null) continue;
 
       // Type checks
-      if (rule.type === 'string' && typeof value !== 'string') {
+      if (rule.type === "string" && typeof value !== "string") {
         errors.push(`${rule.field} must be a string`);
       }
 
-      if (rule.type === 'number' && typeof value !== 'number') {
+      if (rule.type === "number" && typeof value !== "number") {
         errors.push(`${rule.field} must be a number`);
       }
 
-      if (rule.type === 'array' && !Array.isArray(value)) {
+      if (rule.type === "array" && !Array.isArray(value)) {
         errors.push(`${rule.field} must be an array`);
       }
 
-      if (rule.type === 'boolean' && typeof value !== 'boolean') {
+      if (rule.type === "boolean" && typeof value !== "boolean") {
         errors.push(`${rule.field} must be a boolean`);
       }
 
-      if (rule.type === 'date') {
+      if (rule.type === "date") {
         const date = new Date(value);
         if (isNaN(date.getTime())) {
           errors.push(`${rule.field} must be a valid date`);
@@ -48,7 +51,7 @@ export const validate = (rules) => {
       }
 
       // Min/Max for strings
-      if (rule.type === 'string' && typeof value === 'string') {
+      if (rule.type === "string" && typeof value === "string") {
         if (rule.min && value.length < rule.min) {
           errors.push(`${rule.field} must be at least ${rule.min} characters`);
         }
@@ -58,7 +61,7 @@ export const validate = (rules) => {
       }
 
       // Min/Max for numbers
-      if (rule.type === 'number' && typeof value === 'number') {
+      if (rule.type === "number" && typeof value === "number") {
         if (rule.min !== undefined && value < rule.min) {
           errors.push(`${rule.field} must be at least ${rule.min}`);
         }
@@ -68,14 +71,14 @@ export const validate = (rules) => {
       }
 
       // Min length for arrays
-      if (rule.type === 'array' && Array.isArray(value)) {
+      if (rule.type === "array" && Array.isArray(value)) {
         if (rule.min && value.length < rule.min) {
           errors.push(`${rule.field} must have at least ${rule.min} items`);
         }
       }
 
       // Email pattern
-      if (rule.type === 'email') {
+      if (rule.type === "email") {
         const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
         if (!emailRegex.test(value)) {
           errors.push(`${rule.field} must be a valid email`);
@@ -86,7 +89,7 @@ export const validate = (rules) => {
     if (errors.length > 0) {
       return res.status(400).json({
         success: false,
-        message: errors.length === 1 ? errors[0] : 'Validation failed',
+        message: errors.length === 1 ? errors[0] : "Validation failed",
         errors,
       });
     }
@@ -97,40 +100,58 @@ export const validate = (rules) => {
 
 // Pre-built validation rules
 export const registerRules = validate([
-  { field: 'name', type: 'string', required: true, min: 1, max: 50 },
-  { field: 'email', type: 'email', required: true },
-  { field: 'password', type: 'string', required: true, min: 8 },
+  { field: "name", type: "string", required: true, min: 1, max: 50 },
+  { field: "email", type: "email", required: true },
+  { field: "password", type: "string", required: true, min: 8 },
 ]);
 
 export const loginRules = validate([
-  { field: 'email', type: 'email', required: true },
-  { field: 'password', type: 'string', required: true },
+  { field: "email", type: "email", required: true },
+  { field: "password", type: "string", required: true },
 ]);
 
 export const updatePasswordRules = validate([
-  { field: 'currentPassword', type: 'string', required: true, message: 'Current password is required' },
-  { field: 'newPassword', type: 'string', required: true, min: 8, message: 'New password must be at least 8 characters' },
+  {
+    field: "currentPassword",
+    type: "string",
+    required: true,
+    message: "Current password is required",
+  },
+  {
+    field: "newPassword",
+    type: "string",
+    required: true,
+    min: 8,
+    message: "New password must be at least 8 characters",
+  },
 ]);
 
 export const createTaskRules = validate([
-  { field: 'title', type: 'string', required: true, min: 1, max: 100 },
-  { field: 'description', type: 'string', required: true, min: 1, max: 2000 },
-  { field: 'skills', type: 'array', required: true, min: 1 },
-  { field: 'deadline', type: 'date', required: true, future: true },
+  { field: "title", type: "string", required: true, min: 1, max: 100 },
+  { field: "description", type: "string", required: true, min: 1, max: 2000 },
+  { field: "skills", type: "array", required: true, min: 1 },
+  { field: "deadline", type: "date", required: true, future: true },
 ]);
 
 export const submitTaskRules = validate([
-  { field: 'content', type: 'string', required: true, min: 1 },
+  { field: "content", type: "string", required: true, min: 1 },
 ]);
 
 export const reviewTaskRules = validate([
-  { field: 'satisfied', type: 'boolean', required: true },
+  { field: "satisfied", type: "boolean", required: true },
 ]);
 
 export const rateUserRules = validate([
-  { field: 'rating', type: 'number', required: true, min: 1, max: 5 },
+  { field: "rating", type: "number", required: true, min: 1, max: 5 },
 ]);
 
 export const sendMessageRules = validate([
-  { field: 'content', type: 'string', required: true, min: 1, max: 2000 },
+  { field: "content", type: "string", required: true, min: 1, max: 2000 },
+]);
+
+export const chatAIRules = validate([
+  { field: "message", type: "string", required: true, min: 3, max: 5000 },
+  { field: "taskId", type: "string", required: false },
+  { field: "submissionId", type: "string", required: false },
+  { field: "conversationHistory", type: "array", required: false },
 ]);

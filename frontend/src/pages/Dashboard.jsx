@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { taskService } from '../services/taskService';
-import { userService } from '../services/userService';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { taskService } from "../services/taskService";
+import { userService } from "../services/userService";
 import {
   LayoutDashboard,
   Award,
@@ -12,16 +12,16 @@ import {
   PlusCircle,
   TrendingUp,
   ArrowRight,
-} from 'lucide-react';
-import { PageLoading, TaskCard, EmptyState } from '../components';
-import { formatNumber } from '../utils/helpers';
+} from "lucide-react";
+import { PageLoading, TaskCard, EmptyState } from "../components";
+import { formatNumber } from "../utils/helpers";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [tasks, setTasks] = useState({ posted: [], taken: [] });
-  const [activeTab, setActiveTab] = useState('posted');
+  const [activeTab, setActiveTab] = useState("posted");
 
   useEffect(() => {
     loadDashboardData();
@@ -35,12 +35,15 @@ const Dashboard = () => {
         taskService.getMyTasks(),
       ]);
       setStats(statsResponse.stats);
+
+      // Extract task arrays from response object
       setTasks({
-        posted: tasksResponse.postedTasks,
-        taken: tasksResponse.takenTasks,
+        posted: tasksResponse.postedTasks?.tasks || [],
+        taken: tasksResponse.takenTasks?.tasks || [],
       });
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      console.error("Error loading dashboard:", error);
+      setTasks({ posted: [], taken: [] });
     } finally {
       setLoading(false);
     }
@@ -52,44 +55,44 @@ const Dashboard = () => {
 
   const statCards = [
     {
-      title: 'Total Points',
+      title: "Total Points",
       value: formatNumber(stats?.totalPoints || 0),
       icon: TrendingUp,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10',
+      color: "text-blue-400",
+      bgColor: "bg-blue-500/10",
     },
     {
-      title: 'Credit Points',
+      title: "Credit Points",
       value: formatNumber(stats?.creditPoints || 0),
       icon: Award,
-      color: 'text-brand-orange',
-      bgColor: 'bg-brand-orange/10',
+      color: "text-brand-orange",
+      bgColor: "bg-brand-orange/10",
     },
     {
-      title: 'Tasks Completed',
+      title: "Tasks Completed",
       value: formatNumber(stats?.tasksCompleted || 0),
       icon: CheckCircle,
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/10',
+      color: "text-green-400",
+      bgColor: "bg-green-500/10",
     },
     {
-      title: 'Average Rating',
-      value: stats?.averageRating?.toFixed(1) || '0.0',
+      title: "Average Rating",
+      value: stats?.averageRating?.toFixed(1) || "0.0",
       icon: Star,
-      color: 'text-yellow-400',
-      bgColor: 'bg-yellow-500/10',
+      color: "text-yellow-400",
+      bgColor: "bg-yellow-500/10",
     },
   ];
 
   const tabs = [
     {
-      id: 'posted',
-      label: 'Tasks Posted',
+      id: "posted",
+      label: "Tasks Posted",
       count: tasks.posted.length,
     },
     {
-      id: 'taken',
-      label: 'Tasks Taken',
+      id: "taken",
+      label: "Tasks Taken",
       count: tasks.taken.length,
     },
   ];
@@ -107,27 +110,32 @@ const Dashboard = () => {
           </h1>
         </div>
         <p className="text-brand-text-secondary text-lg">
-          Welcome back, <span className="text-white font-medium">{user?.name}</span>! Here's your campus contribution overview.
+          Welcome back,{" "}
+          <span className="text-white font-medium">{user?.name}</span>! Here's
+          your campus contribution overview.
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         {statCards.map((stat, index) => (
-          <div key={index} className="card p-6 border-brand-border/50 hover:border-brand-orange/20 group">
+          <div
+            key={index}
+            className="card p-6 border-brand-border/50 hover:border-brand-orange/20 group"
+          >
             <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-2xl ${stat.bgColor} border border-white/5 transition-transform group-hover:scale-110`}>
+              <div
+                className={`p-3 rounded-2xl ${stat.bgColor} border border-white/5 transition-transform group-hover:scale-110`}
+              >
                 <stat.icon className={`w-6 h-6 ${stat.color}`} />
               </div>
-              {stat.title === 'Total Points' && stats?.rank && (
+              {stat.title === "Total Points" && stats?.rank && (
                 <div className="px-3 py-1 rounded-full bg-brand-surface border border-brand-border text-xs font-bold text-brand-text-secondary">
                   RANK #{stats.rank}
                 </div>
               )}
             </div>
-            <p className="text-3xl font-bold text-white mb-1">
-              {stat.value}
-            </p>
+            <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
             <p className="text-xs font-bold uppercase tracking-widest text-brand-text-muted">
               {stat.title}
             </p>
@@ -189,14 +197,18 @@ const Dashboard = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-8 py-5 font-bold text-xs uppercase tracking-widest transition-all relative ${
                   activeTab === tab.id
-                    ? 'text-brand-orange'
-                    : 'text-brand-text-muted hover:text-brand-text-secondary'
+                    ? "text-brand-orange"
+                    : "text-brand-text-muted hover:text-brand-text-secondary"
                 }`}
               >
                 {tab.label}
-                <span className={`ml-3 px-2 py-0.5 rounded-md text-[10px] ${
-                  activeTab === tab.id ? 'bg-brand-orange text-white' : 'bg-brand-border text-brand-text-muted'
-                }`}>
+                <span
+                  className={`ml-3 px-2 py-0.5 rounded-md text-[10px] ${
+                    activeTab === tab.id
+                      ? "bg-brand-orange text-white"
+                      : "bg-brand-border text-brand-text-muted"
+                  }`}
+                >
                   {tab.count}
                 </span>
                 {activeTab === tab.id && (
@@ -209,7 +221,7 @@ const Dashboard = () => {
 
         {/* Tasks List */}
         <div className="p-8">
-          {activeTab === 'posted' && (
+          {activeTab === "posted" && (
             <>
               {tasks.posted.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -231,7 +243,7 @@ const Dashboard = () => {
             </>
           )}
 
-          {activeTab === 'taken' && (
+          {activeTab === "taken" && (
             <>
               {tasks.taken.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

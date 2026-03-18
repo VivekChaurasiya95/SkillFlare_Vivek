@@ -1,6 +1,8 @@
 import User from '../models/User.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { escapeRegex } from '../utils/sanitize.js';
+import { cache } from '../config/cache.js';
+import { getPaginationParams, getPaginationMeta } from '../utils/queryOptimization.js';
 
 // @desc    Get user profile
 // @route   GET /api/users/profile/:id
@@ -21,12 +23,12 @@ export const getUserProfile = asyncHandler(async (req, res) => {
   });
 });
 
-// Only allow https:// and http:// URLs to prevent javascript: URI XSS
+// Helper for URL validation
 const isSafeUrl = (value) => {
   if (!value) return true;
   try {
-    const { protocol } = new URL(value);
-    return protocol === 'https:' || protocol === 'http:';
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:';
   } catch {
     return false;
   }
@@ -48,13 +50,9 @@ export const updateProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
 
   if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found',
-    });
+    return res.status(404).json({ success: false, message: 'User not found' });
   }
 
-  // Update fields
   if (name) user.name = name;
   if (bio !== undefined) user.bio = bio;
   if (skills) user.skills = skills;
@@ -69,43 +67,65 @@ export const updateProfile = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get leaderboard
+// @desc    Get leaderboard (cached for performance)
 // @route   GET /api/users/leaderboard
 // @access  Public
 export const getLeaderboard = asyncHandler(async (req, res) => {
-  const { role, limit = 20 } = req.query;
+  const { role, limit, page } = req.query;
+  
+  // Use utility for standardized pagination
+  const { page: pageNum, limit: limitNum, skip } = getPaginationParams({ page, limit });
+  const cacheKey = `leaderboard:${role || 'all'}:${limitNum}:${pageNum}`;
 
-  const query = {};
-  if (role) {
-    query.role = role;
+  // Try cache
+  const cachedResult = cache.get(cacheKey);
+  if (cachedResult) {
+    return res.status(200).json({
+      success: true,
+      ...cachedResult,
+      fromCache: true,
+    });
   }
 
-  const users = await User.find(query)
-    .select('name email role avatar creditPoints ratingPoints totalPoints tasksCompleted averageRating')
-    .sort({ totalPoints: -1, tasksCompleted: -1 })
-    .limit(parseInt(limit));
+  const query = role ? { role } : {};
 
-  // Add rank to each user
+  const [users, total] = await Promise.all([
+    User.find(query)
+      .select('name email role avatar creditPoints ratingPoints totalPoints tasksCompleted averageRating')
+      .sort({ totalPoints: -1, tasksCompleted: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean(),
+    User.countDocuments(query),
+  ]);
+
   const rankedUsers = users.map((user, index) => ({
-    ...user.toObject(),
-    rank: index + 1,
+    ...user,
+    rank: skip + index + 1,
   }));
+
+  const result = {
+    users: rankedUsers,
+    ...getPaginationMeta(total, pageNum, limitNum),
+  };
+
+  // Cache result for 5 minutes (300 seconds)
+  cache.set(cacheKey, result, 300);
 
   res.status(200).json({
     success: true,
-    count: rankedUsers.length,
-    users: rankedUsers,
+    ...result,
   });
 });
 
-// @desc    Get all users (for admin)
+// @desc    Get all users (with search and filter)
 // @route   GET /api/users
-// @access  Private (Admin only - future enhancement)
+// @access  Private/Admin
 export const getUsers = asyncHandler(async (req, res) => {
-  const { role, search, page = 1, limit = 10 } = req.query;
+  const { page, limit, role, search } = req.query;
+  const { page: pageNum, limit: pageLimit, skip } = getPaginationParams({ page, limit });
 
   const query = {};
-
   if (role) {
     query.role = role;
   }
@@ -118,23 +138,20 @@ export const getUsers = asyncHandler(async (req, res) => {
     ];
   }
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
-
-  const users = await User.find(query)
-    .select('-password')
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(parseInt(limit));
-
-  const total = await User.countDocuments(query);
+  const [users, total] = await Promise.all([
+    User.find(query)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageLimit)
+      .lean(),
+    User.countDocuments(query),
+  ]);
 
   res.status(200).json({
     success: true,
-    count: users.length,
-    total,
-    totalPages: Math.ceil(total / parseInt(limit)),
-    currentPage: parseInt(page),
     users,
+    ...getPaginationMeta(total, pageNum, pageLimit),
   });
 });
 
@@ -144,35 +161,22 @@ export const getUsers = asyncHandler(async (req, res) => {
 export const rateUser = asyncHandler(async (req, res) => {
   const { rating, review, taskId } = req.body;
 
-  // Validate rating
   if (!rating || rating < 1 || rating > 5) {
-    return res.status(400).json({
-      success: false,
-      message: 'Rating must be between 1 and 5',
-    });
+    return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
   }
 
   const user = await User.findById(req.params.id);
-
   if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found',
-    });
+    return res.status(404).json({ success: false, message: 'User not found' });
   }
 
-  // Can't rate yourself
   if (req.params.id === req.user.id) {
-    return res.status(400).json({
-      success: false,
-      message: 'You cannot rate yourself',
-    });
+    return res.status(400).json({ success: false, message: 'You cannot rate yourself' });
   }
 
-  // Check if already rated for this task
   if (taskId) {
     const existingRating = user.ratings.find(
-      (r) => r.taskId && r.taskId.toString() === taskId && r.ratedBy.toString() === req.user.id
+      (r) => r.taskId?.toString() === taskId && r.ratedBy.toString() === req.user.id
     );
 
     if (existingRating) {
@@ -183,7 +187,6 @@ export const rateUser = asyncHandler(async (req, res) => {
     }
   }
 
-  // Add rating
   user.ratings.push({
     rating,
     review: review || '',
@@ -191,9 +194,6 @@ export const rateUser = asyncHandler(async (req, res) => {
     taskId: taskId || null,
   });
 
-  // Calculate average rating and total points
-  // Note: ratingPoints are only awarded via task review (reviewTask in taskController),
-  // NOT here, to prevent double-awarding of points.
   user.calculateAverageRating();
   user.calculateTotalPoints();
   await user.save();
@@ -213,17 +213,12 @@ export const getUserStats = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
 
   if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found',
-    });
+    return res.status(404).json({ success: false, message: 'User not found' });
   }
 
-  // Get user's rank
   const usersAbove = await User.countDocuments({
     totalPoints: { $gt: user.totalPoints },
   });
-  const rank = usersAbove + 1;
 
   res.status(200).json({
     success: true,
@@ -235,7 +230,7 @@ export const getUserStats = asyncHandler(async (req, res) => {
       tasksPosted: user.tasksPosted,
       averageRating: user.averageRating,
       totalRatings: user.ratings.length,
-      rank,
+      rank: usersAbove + 1,
     },
   });
 });

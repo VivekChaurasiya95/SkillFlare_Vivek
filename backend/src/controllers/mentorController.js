@@ -1,26 +1,54 @@
-import mongoose from 'mongoose';
-import asyncHandler from '../utils/asyncHandler.js';
-import User from '../models/User.js';
-import MentorProfile from '../models/MentorProfile.js';
-import MentorshipRequest from '../models/MentorshipRequest.js';
+import mongoose from "mongoose";
+import asyncHandler from "../utils/asyncHandler.js";
+import User from "../models/User.js";
+import MentorProfile from "../models/MentorProfile.js";
+import MentorshipRequest from "../models/MentorshipRequest.js";
+import {
+  getPaginationParams,
+  getPaginationMeta,
+} from "../utils/queryOptimization.js";
+import logger from "../config/logger.js";
 
-// @desc    Get all mentors
+// @desc    Get all mentors (with pagination)
 // @route   GET /api/mentors
 // @access  Public
 export const getMentors = asyncHandler(async (req, res) => {
-  const mentors = await MentorProfile.find({ isActive: true }).populate('userId', 'name email avatar isMentor');
-  res.status(200).json(mentors);
+  const { page = 1, limit = 10 } = req.query;
+  const {
+    skip,
+    limit: pageLimit,
+    page: pageNum,
+  } = getPaginationParams({ page, limit });
+
+  const [mentors, total] = await Promise.all([
+    MentorProfile.find({ isActive: true })
+      .select("userId bio skills")
+      .populate("userId", "name email avatar isMentor")
+      .skip(skip)
+      .limit(pageLimit)
+      .lean()
+      .exec(),
+    MentorProfile.countDocuments({ isActive: true }),
+  ]);
+
+  res.status(200).json({
+    success: true,
+    ...getPaginationMeta(total, pageNum, pageLimit),
+    mentors,
+  });
 });
 
 // @desc    Get mentor by ID
 // @route   GET /api/mentors/:id
 // @access  Public
 export const getMentorById = asyncHandler(async (req, res) => {
-  const mentor = await MentorProfile.findOne({ userId: req.params.id }).populate('userId', 'name email avatar isMentor');
-  
+  const mentor = await MentorProfile.findOne({
+    userId: req.params.id,
+  }).populate("userId", "name email avatar isMentor");
+
   if (!mentor) {
     res.status(404);
-    throw new Error('Mentor not found');
+    throw new Error("Mentor not found");
   }
 
   res.status(200).json(mentor);
@@ -36,7 +64,7 @@ export const applyAsMentor = asyncHandler(async (req, res) => {
 
   if (mentorProfile) {
     res.status(400);
-    throw new Error('You have already applied as a mentor');
+    throw new Error("You have already applied as a mentor");
   }
 
   mentorProfile = await MentorProfile.create({
@@ -63,28 +91,41 @@ export const updateMentorProfile = asyncHandler(async (req, res) => {
 
   if (!mentorProfile) {
     res.status(404);
-    throw new Error('Mentor profile not found');
+    throw new Error("Mentor profile not found");
   }
 
   if (bio !== undefined) mentorProfile.bio = bio;
   if (isActive !== undefined) mentorProfile.isActive = isActive;
   if (socialLinks !== undefined) mentorProfile.socialLinks = socialLinks;
-  if (codingPlatforms !== undefined) mentorProfile.codingPlatforms = codingPlatforms;
+  if (codingPlatforms !== undefined)
+    mentorProfile.codingPlatforms = codingPlatforms;
   if (skills !== undefined) {
     // Preserve verification status for existing skills, add new ones as pending
-    const updatedSkills = skills.map(newSkill => {
-      const existing = mentorProfile.skills.find(s => s.name === newSkill.name);
+    const updatedSkills = skills.map((newSkill) => {
+      const existing = mentorProfile.skills.find(
+        (s) => s.name === newSkill.name,
+      );
       if (existing) {
-        return { ...existing.toObject(), level: newSkill.level || existing.level };
+        return {
+          ...existing.toObject(),
+          level: newSkill.level || existing.level,
+        };
       }
-      return { name: newSkill.name, level: newSkill.level || 'beginner', verificationStatus: 'pending' };
+      return {
+        name: newSkill.name,
+        level: newSkill.level || "beginner",
+        verificationStatus: "pending",
+      };
     });
     mentorProfile.skills = updatedSkills;
   }
 
   await mentorProfile.save();
 
-  const populated = await MentorProfile.findById(mentorProfile._id).populate('userId', 'name email avatar isMentor');
+  const populated = await MentorProfile.findById(mentorProfile._id).populate(
+    "userId",
+    "name email avatar isMentor",
+  );
   res.status(200).json(populated);
 });
 
@@ -98,17 +139,17 @@ export const addSkill = asyncHandler(async (req, res) => {
 
   if (!mentorProfile) {
     res.status(404);
-    throw new Error('Mentor profile not found');
+    throw new Error("Mentor profile not found");
   }
 
   // Check if skill already exists
-  const skillExists = mentorProfile.skills.find(s => s.name === name);
+  const skillExists = mentorProfile.skills.find((s) => s.name === name);
   if (skillExists) {
     res.status(400);
-    throw new Error('Skill already exists');
+    throw new Error("Skill already exists");
   }
 
-  mentorProfile.skills.push({ name, verificationStatus: 'pending' });
+  mentorProfile.skills.push({ name, verificationStatus: "pending" });
   await mentorProfile.save();
 
   res.status(200).json(mentorProfile);
@@ -124,19 +165,21 @@ export const uploadVerification = asyncHandler(async (req, res) => {
 
   if (!mentorProfile) {
     res.status(404);
-    throw new Error('Mentor profile not found');
+    throw new Error("Mentor profile not found");
   }
 
-  const skillIndex = mentorProfile.skills.findIndex(s => s.name === skillName);
-  
+  const skillIndex = mentorProfile.skills.findIndex(
+    (s) => s.name === skillName,
+  );
+
   if (skillIndex === -1) {
     res.status(404);
-    throw new Error('Skill not found');
+    throw new Error("Skill not found");
   }
 
   mentorProfile.skills[skillIndex].verificationDoc = verificationDoc;
-  mentorProfile.skills[skillIndex].verificationStatus = 'pending';
-  
+  mentorProfile.skills[skillIndex].verificationStatus = "pending";
+
   await mentorProfile.save();
 
   res.status(200).json(mentorProfile);
@@ -148,27 +191,29 @@ export const uploadVerification = asyncHandler(async (req, res) => {
 export const verifySkill = asyncHandler(async (req, res) => {
   const { status } = req.body; // 'approved' or 'rejected'
 
-  if (!['approved', 'rejected'].includes(status)) {
+  if (!["approved", "rejected"].includes(status)) {
     res.status(400);
-    throw new Error('Invalid status');
+    throw new Error("Invalid status");
   }
 
-  const mentorProfile = await MentorProfile.findOne({ userId: req.params.mentorId });
+  const mentorProfile = await MentorProfile.findOne({
+    userId: req.params.mentorId,
+  });
 
   if (!mentorProfile) {
     res.status(404);
-    throw new Error('Mentor profile not found');
+    throw new Error("Mentor profile not found");
   }
 
   const skill = mentorProfile.skills.id(req.params.skillId);
-  
+
   if (!skill) {
     res.status(404);
-    throw new Error('Skill not found');
+    throw new Error("Skill not found");
   }
 
   skill.verificationStatus = status;
-  skill.isVerified = status === 'approved';
+  skill.isVerified = status === "approved";
 
   await mentorProfile.save();
 
@@ -183,19 +228,22 @@ export const requestSession = asyncHandler(async (req, res) => {
 
   if (req.user._id.toString() === mentorId) {
     res.status(400);
-    throw new Error('You cannot request a session with yourself');
+    throw new Error("You cannot request a session with yourself");
   }
 
-  const mentorProfile = await MentorProfile.findOne({ userId: mentorId, isActive: true });
+  const mentorProfile = await MentorProfile.findOne({
+    userId: mentorId,
+    isActive: true,
+  });
   if (!mentorProfile) {
     res.status(404);
-    throw new Error('Mentor not found or inactive');
+    throw new Error("Mentor not found or inactive");
   }
 
   const student = await User.findById(req.user._id);
   if (student.creditPoints < creditsUsed) {
     res.status(400);
-    throw new Error('Insufficient credits');
+    throw new Error("Insufficient credits");
   }
 
   // Use a transaction so credit deduction and request creation are atomic
@@ -207,27 +255,73 @@ export const requestSession = asyncHandler(async (req, res) => {
       await student.save({ session });
 
       [request] = await MentorshipRequest.create(
-        [{ studentId: req.user._id, mentorId, skill, message, sessionDate, creditsUsed }],
-        { session }
+        [
+          {
+            studentId: req.user._id,
+            mentorId,
+            skill,
+            message,
+            sessionDate,
+            creditsUsed,
+          },
+        ],
+        { session },
       );
     });
+  } catch (error) {
+    logger.error("Failed to create mentorship request", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create mentorship request",
+    });
+    return;
   } finally {
     await session.endSession();
   }
 
-  res.status(201).json(request);
+  res.status(201).json({
+    success: true,
+    request,
+  });
 });
 
-// @desc    Get my mentorship requests (as student or mentor)
+// @desc    Get my mentorship requests (as student or mentor, with pagination)
 // @route   GET /api/mentors/my-requests
 // @access  Private
 export const getMyRequests = asyncHandler(async (req, res) => {
-  const requestsAsStudent = await MentorshipRequest.find({ studentId: req.user._id }).populate('mentorId', 'name avatar');
-  const requestsAsMentor = await MentorshipRequest.find({ mentorId: req.user._id }).populate('studentId', 'name avatar');
+  const { page = 1, limit = 10 } = req.query;
+  const {
+    skip,
+    limit: pageLimit,
+    page: pageNum,
+  } = getPaginationParams({ page, limit });
+
+  const [requestsAsStudent, requestsAsMentor] = await Promise.all([
+    MentorshipRequest.find({ studentId: req.user._id })
+      .populate("mentorId", "name avatar")
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec(),
+    MentorshipRequest.find({ mentorId: req.user._id })
+      .populate("studentId", "name avatar")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageLimit)
+      .lean()
+      .exec(),
+  ]);
+
+  const totalAsMentor = await MentorshipRequest.countDocuments({
+    mentorId: req.user._id,
+  });
 
   res.status(200).json({
+    success: true,
     asStudent: requestsAsStudent,
-    asMentor: requestsAsMentor,
+    asMentor: {
+      requests: requestsAsMentor,
+      ...getPaginationMeta(totalAsMentor, pageNum, pageLimit),
+    },
   });
 });
 
@@ -237,33 +331,33 @@ export const getMyRequests = asyncHandler(async (req, res) => {
 export const respondToRequest = asyncHandler(async (req, res) => {
   const { status } = req.body; // 'accepted' or 'rejected'
 
-  if (!['accepted', 'rejected'].includes(status)) {
+  if (!["accepted", "rejected"].includes(status)) {
     res.status(400);
-    throw new Error('Invalid status');
+    throw new Error("Invalid status");
   }
 
   const request = await MentorshipRequest.findById(req.params.requestId);
 
   if (!request) {
     res.status(404);
-    throw new Error('Request not found');
+    throw new Error("Request not found");
   }
 
   if (request.mentorId.toString() !== req.user._id.toString()) {
     res.status(401);
-    throw new Error('Not authorized');
+    throw new Error("Not authorized");
   }
 
-  if (request.status !== 'pending') {
+  if (request.status !== "pending") {
     res.status(400);
-    throw new Error('Request already processed');
+    throw new Error("Request already processed");
   }
 
   request.status = status;
   await request.save();
 
   // If rejected, refund credits
-  if (status === 'rejected') {
+  if (status === "rejected") {
     const student = await User.findById(request.studentId);
     student.creditPoints += request.creditsUsed;
     await student.save();
@@ -282,20 +376,20 @@ export const completeSession = asyncHandler(async (req, res) => {
 
   if (!request) {
     res.status(404);
-    throw new Error('Request not found');
+    throw new Error("Request not found");
   }
 
   if (request.studentId.toString() !== req.user._id.toString()) {
     res.status(401);
-    throw new Error('Only student can complete and rate the session');
+    throw new Error("Only student can complete and rate the session");
   }
 
-  if (request.status !== 'accepted') {
+  if (request.status !== "accepted") {
     res.status(400);
-    throw new Error('Session must be accepted before completion');
+    throw new Error("Session must be accepted before completion");
   }
 
-  request.status = 'completed';
+  request.status = "completed";
   if (rating) request.rating = rating;
   if (review) request.review = review;
   await request.save();
@@ -306,11 +400,14 @@ export const completeSession = asyncHandler(async (req, res) => {
   await mentor.save();
 
   // Update mentor profile rating
-  const mentorProfile = await MentorProfile.findOne({ userId: request.mentorId });
+  const mentorProfile = await MentorProfile.findOne({
+    userId: request.mentorId,
+  });
   if (mentorProfile) {
     const totalRatingSum = mentorProfile.rating * mentorProfile.totalSessions;
     mentorProfile.totalSessions += 1;
-    mentorProfile.rating = (totalRatingSum + (rating || 0)) / mentorProfile.totalSessions;
+    mentorProfile.rating =
+      (totalRatingSum + (rating || 0)) / mentorProfile.totalSessions;
     await mentorProfile.save();
   }
 

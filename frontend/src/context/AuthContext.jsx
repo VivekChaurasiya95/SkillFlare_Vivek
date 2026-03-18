@@ -1,5 +1,12 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { authService } from "../services/authService";
+import { cancelAllRequests } from "../services/api";
 import toast from "react-hot-toast";
 
 const AuthContext = createContext(null);
@@ -30,8 +37,9 @@ export const AuthProvider = ({ children }) => {
     } catch {
       setUser(null);
       setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const login = async (email, password) => {
@@ -70,16 +78,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    authService.logout().catch(() => {});
+  // Cleanup function for logout
+  const logout = useCallback(async () => {
+    try {
+      // Attempt server logout
+      await authService.logout();
+    } catch (_) {
+      // Fail silently, proceed with client-side cleanup
+    }
+
+    // Cancel all pending API requests to prevent memory leaks
+    cancelAllRequests();
+
+    // Clear user state
     setUser(null);
     setIsAuthenticated(false);
-    toast.success("Logged out successfully");
-  };
 
-  const updateUser = (userData) => {
-    setUser((prev) => ({ ...prev, ...userData }));
-  };
+    // Clear any cached data (optional, add if there's caching in localStorage)
+    // sessionStorage.clear(); // Only if you're using sessionStorage
+
+    toast.success("Logged out successfully");
+  }, []);
+
+  const updateUser = useCallback((userData) => {
+    setUser((prev) => (prev ? { ...prev, ...userData } : null));
+  }, []);
 
   const value = {
     user,

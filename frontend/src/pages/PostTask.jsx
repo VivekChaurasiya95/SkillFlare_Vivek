@@ -1,27 +1,27 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { taskService } from '../services/taskService';
-import { ArrowLeft, PlusCircle, X, Plus, Info } from 'lucide-react';
-import { ButtonLoading, Alert } from '../components';
-import { SKILLS } from '../utils/constants';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { taskService } from "../services/taskService";
+import { ArrowLeft, PlusCircle, X, Plus, Info } from "lucide-react";
+import { ButtonLoading, Alert, DatePicker } from "../components";
+import { SKILLS } from "../utils/constants";
+import toast from "react-hot-toast";
 
 const PostTask = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
+    title: "",
+    description: "",
     skills: [],
     creditPoints: 20,
-    deadline: '',
+    deadline: "",
   });
   const [errors, setErrors] = useState({});
-  const [newSkill, setNewSkill] = useState('');
+  const [newSkill, setNewSkill] = useState("");
 
-  const isTeacher = user?.role === 'teacher';
+  const isTeacher = user?.role === "teacher";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,18 +30,22 @@ const PostTask = () => {
       [name]: value,
     }));
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleAddSkill = (skill) => {
-    if (skill && !formData.skills.includes(skill) && formData.skills.length < 5) {
+    if (
+      skill &&
+      !formData.skills.includes(skill) &&
+      formData.skills.length < 5
+    ) {
       setFormData((prev) => ({
         ...prev,
         skills: [...prev.skills, skill],
       }));
     }
-    setNewSkill('');
+    setNewSkill("");
   };
 
   const handleRemoveSkill = (skillToRemove) => {
@@ -55,32 +59,35 @@ const PostTask = () => {
     const newErrors = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
+      newErrors.title = "Title is required";
     } else if (formData.title.length < 5) {
-      newErrors.title = 'Title must be at least 5 characters';
+      newErrors.title = "Title must be at least 5 characters";
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
+      newErrors.description = "Description is required";
     } else if (formData.description.length < 20) {
-      newErrors.description = 'Description must be at least 20 characters';
+      newErrors.description = "Description must be at least 20 characters";
     }
 
     if (formData.skills.length === 0) {
-      newErrors.skills = 'At least one skill is required';
+      newErrors.skills = "At least one skill is required";
     }
 
     if (!formData.deadline) {
-      newErrors.deadline = 'Deadline is required';
+      newErrors.deadline = "Deadline is required";
     } else {
       const deadlineDate = new Date(formData.deadline);
       if (deadlineDate <= new Date()) {
-        newErrors.deadline = 'Deadline must be in the future';
+        newErrors.deadline = "Deadline must be in the future";
       }
     }
 
-    if (isTeacher && (formData.creditPoints < 1 || formData.creditPoints > 100)) {
-      newErrors.creditPoints = 'Credits must be between 1 and 100';
+    if (
+      isTeacher &&
+      (formData.creditPoints < 1 || formData.creditPoints > 100)
+    ) {
+      newErrors.creditPoints = "Credits must be between 1 and 100";
     }
 
     setErrors(newErrors);
@@ -98,10 +105,10 @@ const PostTask = () => {
         creditPoints: isTeacher ? formData.creditPoints : 0,
       };
       const response = await taskService.createTask(taskData);
-      toast.success('Task posted successfully!');
+      toast.success("Task posted successfully!");
       navigate(`/tasks/${response.task._id}`);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to post task');
+      toast.error(error.response?.data?.message || "Failed to post task");
     } finally {
       setLoading(false);
     }
@@ -111,7 +118,7 @@ const PostTask = () => {
   const getMinDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return tomorrow.toISOString().split("T")[0];
   };
 
   return (
@@ -123,15 +130,22 @@ const PostTask = () => {
             onClick={() => navigate(-1)}
             className="inline-flex items-center space-x-2 text-brand-text-secondary hover:text-brand-orange transition-colors group"
           >
-            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-bold uppercase tracking-widest">Back</span>
+            <ArrowLeft
+              size={18}
+              className="group-hover:-translate-x-1 transition-transform"
+            />
+            <span className="text-sm font-bold uppercase tracking-widest">
+              Back
+            </span>
           </button>
-          
+
           <h1 className="text-4xl font-black tracking-tight text-white flex items-center space-x-3">
-             <div className="w-12 h-12 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-brand-orange shadow-glow">
-                <PlusCircle size={28} />
-             </div>
-             <span>Create <span className="text-gradient">Mission</span></span>
+            <div className="w-12 h-12 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-brand-orange shadow-glow">
+              <PlusCircle size={28} />
+            </div>
+            <span>
+              Create <span className="text-gradient">Mission</span>
+            </span>
           </h1>
           <div className="hidden md:block w-20" />
         </div>
@@ -139,20 +153,28 @@ const PostTask = () => {
         {/* Info alert for students */}
         {!isTeacher && (
           <div className="bg-blue-500/10 border border-blue-500/20 p-6 rounded-2xl flex items-start space-x-4 mb-8">
-             <Info className="text-blue-400 mt-1 flex-shrink-0" size={24} />
-             <p className="text-brand-text-secondary leading-relaxed">
-                As a student, you can post missions for peer collaboration. 
-                <span className="block mt-1 text-sm font-bold text-blue-400/80 uppercase tracking-widest">Note: Student tasks do not award credit points.</span>
-             </p>
+            <Info className="text-blue-400 mt-1 flex-shrink-0" size={24} />
+            <p className="text-brand-text-secondary leading-relaxed">
+              As a student, you can post missions for peer collaboration.
+              <span className="block mt-1 text-sm font-bold text-blue-400/80 uppercase tracking-widest">
+                Note: Student tasks do not award credit points.
+              </span>
+            </p>
           </div>
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="card bg-brand-surface/20 border-brand-border/50 p-8 space-y-8">
+        <form
+          onSubmit={handleSubmit}
+          className="card bg-brand-surface/20 border-brand-border/50 p-8 space-y-8"
+        >
           <div className="grid md:grid-cols-2 gap-8">
             {/* Title */}
             <div className="md:col-span-2">
-              <label htmlFor="title" className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-muted mb-3 block">
+              <label
+                htmlFor="title"
+                className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-muted mb-3 block"
+              >
                 Mission Title *
               </label>
               <input
@@ -161,18 +183,23 @@ const PostTask = () => {
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                className={`w-full bg-brand-dark border ${errors.title ? 'border-red-500' : 'border-brand-border'} rounded-xl p-4 text-white focus:border-brand-orange transition-all outline-none font-bold text-lg placeholder:text-brand-text-muted/50`}
+                className={`w-full bg-brand-dark border ${errors.title ? "border-red-500" : "border-brand-border"} rounded-xl p-4 text-white focus:border-brand-orange transition-all outline-none font-bold text-lg placeholder:text-brand-text-muted/50`}
                 placeholder="e.g., Design a Neural Network Architecture"
                 maxLength={100}
               />
               {errors.title && (
-                <p className="mt-2 text-xs font-bold text-red-500 uppercase tracking-widest">{errors.title}</p>
+                <p className="mt-2 text-xs font-bold text-red-500 uppercase tracking-widest">
+                  {errors.title}
+                </p>
               )}
             </div>
 
             {/* Description */}
             <div className="md:col-span-2">
-              <label htmlFor="description" className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-muted mb-3 block">
+              <label
+                htmlFor="description"
+                className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-muted mb-3 block"
+              >
                 Mission Brief *
               </label>
               <textarea
@@ -181,13 +208,15 @@ const PostTask = () => {
                 value={formData.description}
                 onChange={handleChange}
                 rows={6}
-                className={`w-full bg-brand-dark border ${errors.description ? 'border-red-500' : 'border-brand-border'} rounded-xl p-4 text-white focus:border-brand-orange transition-all outline-none font-medium leading-relaxed placeholder:text-brand-text-muted/50`}
+                className={`w-full bg-brand-dark border ${errors.description ? "border-red-500" : "border-brand-border"} rounded-xl p-4 text-white focus:border-brand-orange transition-all outline-none font-medium leading-relaxed placeholder:text-brand-text-muted/50`}
                 placeholder="Provide details about the task, requirements, and expected deliverables..."
                 maxLength={2000}
               />
               <div className="flex justify-between mt-2">
                 {errors.description ? (
-                  <p className="text-xs font-bold text-red-500 uppercase tracking-widest">{errors.description}</p>
+                  <p className="text-xs font-bold text-red-500 uppercase tracking-widest">
+                    {errors.description}
+                  </p>
                 ) : (
                   <span />
                 )}
@@ -199,7 +228,9 @@ const PostTask = () => {
 
             {/* Skills */}
             <div className="md:col-span-2">
-              <label className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-muted mb-4 block">Required Intel * (max 5)</label>
+              <label className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-muted mb-4 block">
+                Required Intel * (max 5)
+              </label>
 
               {/* Current skills */}
               <div className="flex flex-wrap gap-3 mb-4">
@@ -228,12 +259,20 @@ const PostTask = () => {
                   className="flex-1 bg-brand-dark border border-brand-border rounded-xl p-4 text-white focus:border-brand-orange transition-all outline-none font-bold text-sm"
                   disabled={formData.skills.length >= 5}
                 >
-                  <option value="" className="bg-brand-dark">Protocol Selection...</option>
-                  {SKILLS.filter((s) => !formData.skills.includes(s)).map((skill) => (
-                    <option key={skill} value={skill} className="bg-brand-dark">
-                      {skill}
-                    </option>
-                  ))}
+                  <option value="" className="bg-brand-dark">
+                    Protocol Selection...
+                  </option>
+                  {SKILLS.filter((s) => !formData.skills.includes(s)).map(
+                    (skill) => (
+                      <option
+                        key={skill}
+                        value={skill}
+                        className="bg-brand-dark"
+                      >
+                        {skill}
+                      </option>
+                    ),
+                  )}
                 </select>
                 <button
                   type="button"
@@ -245,14 +284,19 @@ const PostTask = () => {
                 </button>
               </div>
               {errors.skills && (
-                <p className="mt-2 text-xs font-bold text-red-500 uppercase tracking-widest">{errors.skills}</p>
+                <p className="mt-2 text-xs font-bold text-red-500 uppercase tracking-widest">
+                  {errors.skills}
+                </p>
               )}
             </div>
 
             {/* Credit Points (Teachers only) */}
             {isTeacher && (
               <div>
-                <label htmlFor="creditPoints" className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-muted mb-3 block">
+                <label
+                  htmlFor="creditPoints"
+                  className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-muted mb-3 block"
+                >
                   Reward Points *
                 </label>
                 <div className="relative">
@@ -264,39 +308,47 @@ const PostTask = () => {
                     onChange={handleChange}
                     min={1}
                     max={100}
-                    className={`w-full bg-brand-dark border ${errors.creditPoints ? 'border-red-500' : 'border-brand-border'} rounded-xl p-4 pl-12 text-white focus:border-brand-orange transition-all outline-none font-black text-xl`}
+                    className={`w-full bg-brand-dark border ${errors.creditPoints ? "border-red-500" : "border-brand-border"} rounded-xl p-4 pl-12 text-white focus:border-brand-orange transition-all outline-none font-black text-xl`}
                   />
-                  <Award size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-orange shadow-glow" />
+                  <Award
+                    size={20}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-orange shadow-glow"
+                  />
                 </div>
                 <div className="mt-2 flex items-center space-x-2 opacity-60">
                   <Info size={12} className="text-brand-orange" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-brand-text-muted">Credits awarded upon mission success</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-brand-text-muted">
+                    Credits awarded upon mission success
+                  </span>
                 </div>
                 {errors.creditPoints && (
-                  <p className="mt-2 text-xs font-bold text-red-500 uppercase tracking-widest">{errors.creditPoints}</p>
+                  <p className="mt-2 text-xs font-bold text-red-500 uppercase tracking-widest">
+                    {errors.creditPoints}
+                  </p>
                 )}
               </div>
             )}
 
             {/* Deadline */}
-            <div className={isTeacher ? '' : 'md:col-span-2'}>
-              <label htmlFor="deadline" className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-muted mb-3 block">
+            <div className={isTeacher ? "" : "md:col-span-2"}>
+              <label
+                htmlFor="deadline"
+                className="text-xs font-black uppercase tracking-[0.2em] text-brand-text-muted mb-3 block"
+              >
                 Mission Deadline *
               </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  id="deadline"
-                  name="deadline"
-                  value={formData.deadline}
-                  onChange={handleChange}
-                  min={getMinDate()}
-                  className={`w-full bg-brand-dark border ${errors.deadline ? 'border-red-500' : 'border-brand-border'} rounded-xl p-4 pl-12 text-white focus:border-brand-orange transition-all outline-none font-black text-sm uppercase tracking-widest`}
-                />
-                <PlusCircle size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-text-muted opacity-50" />
-              </div>
+              <DatePicker
+                name="deadline"
+                value={formData.deadline}
+                onChange={handleChange}
+                minDate={getMinDate()}
+                error={!!errors.deadline}
+                placeholder="DD-MM-YYYY"
+              />
               {errors.deadline && (
-                <p className="mt-2 text-xs font-bold text-red-500 uppercase tracking-widest">{errors.deadline}</p>
+                <p className="mt-2 text-xs font-bold text-red-500 uppercase tracking-widest">
+                  {errors.deadline}
+                </p>
               )}
             </div>
           </div>
@@ -306,44 +358,62 @@ const PostTask = () => {
             <div className="absolute inset-0 bg-brand-orange/5 group-hover:bg-brand-orange/10 transition-colors"></div>
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <h3 className="text-xs font-black text-brand-orange uppercase tracking-[.25em] mb-4">Mission Parameters</h3>
+                <h3 className="text-xs font-black text-brand-orange uppercase tracking-[.25em] mb-4">
+                  Mission Parameters
+                </h3>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                   <div className="flex items-center space-x-2">
-                      <div className="w-1 h-1 rounded-full bg-brand-orange"></div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-brand-text-muted">Protocol:</span>
-                      <span className="text-xs font-bold text-white uppercase tracking-widest">{user?.role}</span>
-                   </div>
-                   <div className="flex items-center space-x-2">
-                      <div className="w-1 h-1 rounded-full bg-brand-orange"></div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-brand-text-muted">Reward:</span>
-                      <span className="text-xs font-bold text-white uppercase tracking-widest">{isTeacher ? formData.creditPoints : 0} PTS</span>
-                   </div>
-                   <div className="flex items-center space-x-2">
-                      <div className="w-1 h-1 rounded-full bg-brand-orange"></div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-brand-text-muted">Specialization:</span>
-                      <span className="text-xs font-bold text-white uppercase tracking-widest">{formData.skills.length} TAGS</span>
-                   </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-1 h-1 rounded-full bg-brand-orange"></div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-text-muted">
+                      Protocol:
+                    </span>
+                    <span className="text-xs font-bold text-white uppercase tracking-widest">
+                      {user?.role}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-1 h-1 rounded-full bg-brand-orange"></div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-text-muted">
+                      Reward:
+                    </span>
+                    <span className="text-xs font-bold text-white uppercase tracking-widest">
+                      {isTeacher ? formData.creditPoints : 0} PTS
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-1 h-1 rounded-full bg-brand-orange"></div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-text-muted">
+                      Specialization:
+                    </span>
+                    <span className="text-xs font-bold text-white uppercase tracking-widest">
+                      {formData.skills.length} TAGS
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div className="flex md:flex-col items-center gap-3">
-                 <button
-                   type="button"
-                   onClick={() => navigate(-1)}
-                   className="px-8 py-3 text-brand-text-muted hover:text-white font-bold transition-colors"
-                 >
-                   Abort
-                 </button>
-                 <button type="submit" disabled={loading} className="btn-primary px-10 py-3 shadow-glow">
-                   {loading ? (
-                     <ButtonLoading />
-                   ) : (
-                     <div className="flex items-center space-x-2">
-                        <PlusCircle size={18} />
-                        <span>Deploy Mission</span>
-                     </div>
-                   )}
-                 </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="px-8 py-3 text-brand-text-muted hover:text-white font-bold transition-colors"
+                >
+                  Abort
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary px-10 py-3 shadow-glow"
+                >
+                  {loading ? (
+                    <ButtonLoading />
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <PlusCircle size={18} />
+                      <span>Deploy Mission</span>
+                    </div>
+                  )}
+                </button>
               </div>
             </div>
           </div>

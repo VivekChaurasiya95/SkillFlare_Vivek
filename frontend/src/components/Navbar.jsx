@@ -1,6 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import { AIChat } from "./index.js";
 import {
   Menu,
   X,
@@ -13,8 +14,9 @@ import {
   Search,
   Trophy,
   ChevronDown,
-} from 'lucide-react';
-import { useState, useEffect } from 'react';
+  MessageCircle,
+} from "lucide-react";
+import { useState, useEffect } from "react";
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -23,42 +25,48 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
     setIsProfileMenuOpen(false);
     setIsMobileMenuOpen(false);
   };
 
   const navLinks = [
-    { to: '/browse', label: 'Browse', icon: Search },
-    { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-    { to: '/mentors', label: 'Mentors', icon: User },
-    { to: '/developers', label: 'Developers', icon: User },
+    { to: "/browse", label: "Browse", icon: Search },
+    { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+    { to: "/mentors", label: "Mentors", icon: User },
   ];
 
   const authLinks = [
-    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   ];
 
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${
-      scrolled ? 'glass-header py-2' : 'bg-transparent py-4'
-    }`}>
+    <nav
+      className={`fixed w-full z-50 transition-all duration-300 ${
+        scrolled ? "glass-header py-2" : "bg-transparent py-4"
+      }`}
+    >
       <div className="wrapper">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-white font-display font-bold text-xl shadow-glow transition-transform group-hover:scale-110">SF</div>
+            <img
+              src="/logo.png"
+              alt="SkillFlare Logo"
+              className="w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(255,107,53,0.5)] transition-transform group-hover:scale-110"
+            />
             <span className="font-display font-bold text-xl tracking-tight text-white group-hover:text-brand-orange transition-colors">
               SkillFlare
             </span>
@@ -89,10 +97,28 @@ const Navbar = () => {
                 ))}
               </>
             )}
+
+            <Link
+              to="/developers"
+              className="px-4 py-2 ml-1 text-sm font-medium text-white bg-brand-orange hover:bg-[#ff7a3a] rounded-full transition-all shadow-glow"
+            >
+              Developers
+            </Link>
           </div>
 
           {/* Right side */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            {/* AI Chat Button */}
+            {isAuthenticated && (
+              <button
+                onClick={() => setShowAIChat(!showAIChat)}
+                className="p-2 rounded-full text-gray-400 hover:text-brand-orange hover:bg-white/10 transition-colors hidden sm:flex items-center justify-center"
+                title="Open AI Assistant"
+              >
+                <MessageCircle size={20} />
+              </button>
+            )}
+
             {/* Theme toggle - Hidden for now as we are dark-first, but kept for logic */}
             {/* <button
               onClick={toggleTheme}
@@ -123,13 +149,17 @@ const Navbar = () => {
                       <p className="text-xs text-gray-400 truncate">
                         {user?.email}
                       </p>
-                      <span className={`mt-2 inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
-                        user?.role === 'teacher' ? 'bg-brand-orange/20 text-brand-orange' : 'bg-blue-500/20 text-blue-400'
-                      }`}>
+                      <span
+                        className={`mt-2 inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
+                          user?.role === "teacher"
+                            ? "bg-brand-orange/20 text-brand-orange"
+                            : "bg-blue-500/20 text-blue-400"
+                        }`}
+                      >
                         {user?.role}
                       </span>
                     </div>
-                    
+
                     <Link
                       to="/post-task"
                       onClick={() => setIsProfileMenuOpen(false)}
@@ -162,7 +192,10 @@ const Navbar = () => {
             ) : (
               /* Auth buttons */
               <div className="hidden sm:flex items-center space-x-3">
-                <Link to="/login" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                >
                   Login
                 </Link>
                 <Link to="/register" className="btn-primary px-6 py-2 text-sm">
@@ -196,6 +229,15 @@ const Navbar = () => {
                   <span>{link.label}</span>
                 </Link>
               ))}
+
+              <Link
+                to="/developers"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center space-x-3 px-4 py-3 text-white bg-brand-orange hover:bg-[#ff7a3a] rounded-xl shadow-glow"
+              >
+                <User size={20} />
+                <span>Developers</span>
+              </Link>
 
               {isAuthenticated ? (
                 <>
@@ -237,6 +279,15 @@ const Navbar = () => {
                   </Link>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* AI Chat Modal */}
+        {showAIChat && (
+          <div className="ai-modal-overlay">
+            <div className="ai-modal-container">
+              <AIChat onClose={() => setShowAIChat(false)} />
             </div>
           </div>
         )}
