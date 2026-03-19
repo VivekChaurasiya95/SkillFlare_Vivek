@@ -59,7 +59,10 @@ const connectDB = async (retries = MAX_RETRIES) => {
         logger.info("Dropped legacy users.username_1 index");
       }
     } catch (indexError) {
-      logger.warn("Index cleanup warning", { error: indexError.message });
+      // Ignore "ns does not exist" errors - collection is new/doesn't exist yet
+      if (!indexError.message.includes("ns does not exist")) {
+        logger.warn("Index cleanup warning", { error: indexError.message });
+      }
     }
   } catch (error) {
     logger.error(

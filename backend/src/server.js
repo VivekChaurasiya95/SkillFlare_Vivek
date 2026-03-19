@@ -23,6 +23,7 @@ import chatRoutes from "./routes/chatRoutes.js";
 import mentorRoutes from "./routes/mentorRoutes.js";
 import metricsRoutes from "./routes/metricsRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import adminRoutes from "./admin/admin.routes.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 
 // Load env vars
@@ -36,6 +37,9 @@ const httpServer = createServer(app);
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
+
+// Disable etag generation to prevent 304 responses on GET requests
+app.set("etag", false);
 
 // Allowed origins for CORS
 const allowedOrigins =
@@ -114,6 +118,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/mentors", mentorRoutes);
 app.use("/api/metrics", metricsRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Health check route (verifies DB connectivity)
 app.get("/api/health", async (req, res) => {

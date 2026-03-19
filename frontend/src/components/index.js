@@ -1,6 +1,7 @@
 export { default as Navbar } from "./Navbar";
 export { default as Footer } from "./Footer";
 export { default as TaskCard } from "./TaskCard";
+export { default as EditTaskModal } from "./EditTaskModal";
 export { default as Loading, PageLoading, ButtonLoading } from "./Loading";
 export { default as Avatar } from "./Avatar";
 export { default as Alert } from "./Alert";
@@ -11,3 +12,9 @@ export { default as ChatWindow } from "./ChatWindow";
 export { default as DatePicker } from "./DatePicker";
 export { default as AIChat } from "./AIChat";
 export { AIButton } from "./AIButton";
+export { AdminPanel } from "./AdminPanel";
+export { AdminAnalytics } from "./AdminAnalytics";
+export { AdminUsers } from "./AdminUsers";
+export { AdminTasks } from "./AdminTasks";
+export { AdminReports } from "./AdminReports";
+export { AdminSettings } from "./AdminSettings";

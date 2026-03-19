@@ -56,7 +56,11 @@ const teamMembers = [
     category: ["Frontend", "Backend"],
     image: "/Profile_Photos/Krish%20Profile.jpeg",
     skills: ["React", "Node.js", "MongoDB", "Tailwind"],
-    socials: { github: "#", linkedin: "#", portfolio: "#" },
+    socials: {
+      github: "https://github.com/KD2303",
+      linkedin: "https://www.linkedin.com/in/krish-dargar-101774324/",
+      portfolio: "#",
+    },
   },
   {
     id: 2,
@@ -65,7 +69,11 @@ const teamMembers = [
     category: ["Frontend"],
     image: "/Profile_Photos/Sheetal%20Profile.jpeg",
     skills: ["HTML5", "CSS3", "React", "Figma"],
-    socials: { github: "#", linkedin: "#", portfolio: "#" },
+    socials: {
+      github: "https://github.com/sheetal783",
+      linkedin: "https://www.linkedin.com/in/sheetal-gourh-994272339/",
+      portfolio: "#",
+    },
   },
   {
     id: 3,
@@ -74,7 +82,11 @@ const teamMembers = [
     category: ["Backend"],
     image: "/Profile_Photos/Arin%20Profile%20photo.jpeg",
     skills: ["Node.js", "Express", "MongoDB", "REST APIs"],
-    socials: { github: "#", linkedin: "#", portfolio: "#" },
+    socials: {
+      github: "https://github.com/arin-gupta06",
+      linkedin: "https://www.linkedin.com/in/arin-gupta-2b94b032a/",
+      portfolio: "#",
+    },
   },
   {
     id: 4,
@@ -83,7 +95,11 @@ const teamMembers = [
     category: ["Backend"],
     image: "/Profile_Photos/Anurag%20Profile%20Photo.jpeg",
     skills: ["Python", "Django", "PostgreSQL", "Docker"],
-    socials: { github: "#", linkedin: "#", portfolio: "#" },
+    socials: {
+      github: "https://github.com/anuragmishra5159/anuragmishra5159",
+      linkedin: "https://www.linkedin.com/in/anuragmishra5159/",
+      portfolio: "#",
+    },
   },
   {
     id: 5,
@@ -92,8 +108,12 @@ const teamMembers = [
     category: ["Backend"],
     image: "/Profile_Photos/Vivek%20Profile%20Photo.png",
     imagePosition: "object-top",
-    skills: ["Java", "Spring Boot", "MySQL", "AWS"],
-    socials: { github: "#", linkedin: "#", portfolio: "#" },
+    skills: ["Node.js", "Express.js", "MongoDB", "REST APIs"],
+    socials: {
+      github: "https://github.com/VivekChaurasiya95",
+      linkedin: "https://www.linkedin.com/in/vivek-chaurasiya-722037315/",
+      portfolio: "#",
+    },
   },
   {
     id: 6,
@@ -103,7 +123,11 @@ const teamMembers = [
     image: "/Profile_Photos/Ashish%20Profile%20Photo.jpeg",
     imagePosition: "object-[center_top]",
     skills: ["Selenium", "Manual Testing", "JIRA", "Cypress"],
-    socials: { github: "#", linkedin: "#", portfolio: "#" },
+    socials: {
+      github: "https://github.com/Ashishgargnotgonnaloose2248",
+      linkedin: "https://www.linkedin.com/in/ashish-garg-2b896432a/",
+      portfolio: "#",
+    },
   },
 ];
 
@@ -113,7 +137,10 @@ const mentor = {
   image: "/Profile_Photos/Devesh%20Sir%20Profile.jpeg",
   description:
     "Guiding and supporting the development team throughout the project. Expert in Distributed Systems and Software Engineering with over 15 years of academic experience.",
-  socials: { linkedin: "#", email: "mailto:mentor@university.edu" },
+  socials: {
+    linkedin: "https://www.linkedin.com/in/dr-devesh-kumar-lal-aa8ba419/",
+    email: "mailto:mentor@university.edu",
+  },
 };
 
 const filters = ["All", "Frontend", "Backend", "Testing", "Mentor"];

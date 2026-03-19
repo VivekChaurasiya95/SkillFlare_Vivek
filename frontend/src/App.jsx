@@ -16,6 +16,8 @@ import { AIButton } from "./components";
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const BrowseTasks = lazy(() => import("./pages/BrowseTasks"));
 const TaskDetails = lazy(() => import("./pages/TaskDetails"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -27,6 +29,7 @@ const Mentors = lazy(() => import("./pages/Mentors"));
 const MentorProfile = lazy(() => import("./pages/MentorProfile"));
 const ApplyMentor = lazy(() => import("./pages/ApplyMentor"));
 const Developers = lazy(() => import("./pages/Developers"));
+const Admin = lazy(() => import("./pages/Admin"));
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -90,6 +93,22 @@ const AppRoutes = () => {
             element={
               <PublicRoute>
                 <Register />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/reset-password/:token"
+            element={
+              <PublicRoute>
+                <ResetPassword />
               </PublicRoute>
             }
           />
@@ -160,6 +179,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <MentorProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <Admin />
               </ProtectedRoute>
             }
           />

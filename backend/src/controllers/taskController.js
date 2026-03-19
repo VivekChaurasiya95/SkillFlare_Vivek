@@ -150,6 +150,79 @@ export const createTask = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Update task
+// @route   PUT /api/tasks/:id
+// @access  Private (Task poster only)
+export const updateTask = asyncHandler(async (req, res) => {
+  const { title, description, skills, creditPoints, deadline } = req.body;
+  const task = await Task.findById(req.params.id);
+
+  if (!task) {
+    return res.status(404).json({
+      success: false,
+      message: "Task not found",
+    });
+  }
+
+  // Check if user is the task poster
+  if (task.postedBy.toString() !== req.user.id) {
+    return res.status(403).json({
+      success: false,
+      message: "Not authorized to update this task",
+    });
+  }
+
+  // Can only edit open tasks
+  if (task.status !== "open") {
+    return res.status(400).json({
+      success: false,
+      message: "Cannot edit a task that has been taken",
+    });
+  }
+
+  // Validate deadline if provided
+  if (deadline) {
+    const deadlineDate = new Date(deadline);
+    const validationResult = validateDeadline(deadlineDate, 0);
+
+    if (!validationResult.valid) {
+      return res.status(400).json({
+        success: false,
+        message: validationResult.error,
+      });
+    }
+
+    task.deadline = deadlineDate;
+  }
+
+  // Update fields
+  if (title) task.title = title;
+  if (description) task.description = description;
+  if (skills) task.skills = skills;
+  if (creditPoints !== undefined && req.user.role === "teacher") {
+    task.creditPoints = creditPoints;
+  }
+
+  await task.save();
+
+  const updatedTask = await Task.findById(task._id).populate(
+    "postedBy",
+    "name email role avatar",
+  );
+
+  logger.info("Task updated", {
+    taskId: task._id,
+    userId: req.user.id,
+    title,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Task updated successfully",
+    task: updatedTask,
+  });
+});
+
 // @desc    Take a task
 // @route   PUT /api/tasks/:id/take
 // @access  Private (Students only)

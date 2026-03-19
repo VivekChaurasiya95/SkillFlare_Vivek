@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { taskService } from "../services/taskService";
@@ -13,7 +13,12 @@ import {
   TrendingUp,
   ArrowRight,
 } from "lucide-react";
-import { PageLoading, TaskCard, EmptyState } from "../components";
+import {
+  PageLoading,
+  TaskCard,
+  EmptyState,
+  EditTaskModal,
+} from "../components";
 import { formatNumber } from "../utils/helpers";
 
 const Dashboard = () => {
@@ -22,12 +27,13 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [tasks, setTasks] = useState({ posted: [], taken: [] });
   const [activeTab, setActiveTab] = useState("posted");
+  const [editingTask, setEditingTask] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  // 1. Move function definitions to the TOP of the component
+  // to ensure they are defined before the JSX (Return) is reached.
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const [statsResponse, tasksResponse] = await Promise.all([
@@ -36,7 +42,6 @@ const Dashboard = () => {
       ]);
       setStats(statsResponse.stats);
 
-      // Extract task arrays from response object
       setTasks({
         posted: tasksResponse.postedTasks?.tasks || [],
         taken: tasksResponse.takenTasks?.tasks || [],
@@ -47,7 +52,35 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+    setShowEditModal(true);
   };
+
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+    try {
+      await taskService.deleteTask(taskId);
+      setTasks((prev) => ({
+        ...prev,
+        posted: prev.posted.filter((t) => t._id !== taskId),
+      }));
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
+  };
+
+  const handleEditSuccess = () => {
+    setShowEditModal(false);
+    setEditingTask(null);
+    loadDashboardData();
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   if (loading) {
     return <PageLoading />;
@@ -85,16 +118,8 @@ const Dashboard = () => {
   ];
 
   const tabs = [
-    {
-      id: "posted",
-      label: "Tasks Posted",
-      count: tasks.posted.length,
-    },
-    {
-      id: "taken",
-      label: "Tasks Taken",
-      count: tasks.taken.length,
-    },
+    { id: "posted", label: "Tasks Posted", count: tasks.posted.length },
+    { id: "taken", label: "Tasks Taken", count: tasks.taken.length },
   ];
 
   return (
@@ -111,8 +136,7 @@ const Dashboard = () => {
         </div>
         <p className="text-brand-text-secondary text-lg">
           Welcome back,{" "}
-          <span className="text-white font-medium">{user?.name}</span>! Here's
-          your campus contribution overview.
+          <span className="text-white font-medium">{user?.name}</span>!
         </p>
       </div>
 
@@ -129,11 +153,6 @@ const Dashboard = () => {
               >
                 <stat.icon className={`w-6 h-6 ${stat.color}`} />
               </div>
-              {stat.title === "Total Points" && stats?.rank && (
-                <div className="px-3 py-1 rounded-full bg-brand-surface border border-brand-border text-xs font-bold text-brand-text-secondary">
-                  RANK #{stats.rank}
-                </div>
-              )}
             </div>
             <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
             <p className="text-xs font-bold uppercase tracking-widest text-brand-text-muted">
@@ -147,7 +166,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
         <Link
           to="/post-task"
-          className="card p-6 flex items-center justify-between group border-2 border-transparent hover:border-brand-orange/30 transition-all bg-gradient-to-br from-brand-card to-brand-surface"
+          className="card p-6 flex items-center justify-between group hover:border-brand-orange/30 bg-gradient-to-br from-brand-card to-brand-surface"
         >
           <div className="flex items-center space-x-5">
             <div className="p-4 bg-brand-orange/10 rounded-2xl group-hover:bg-brand-orange group-hover:text-white text-brand-orange transition-colors">
@@ -157,17 +176,17 @@ const Dashboard = () => {
               <p className="font-bold text-xl text-white mb-1">
                 Post a New Task
               </p>
-              <p className="text-sm text-brand-text-secondary leading-relaxed">
-                Create meaningful opportunities for students to earn credits.
+              <p className="text-sm text-brand-text-secondary">
+                Create opportunities for others.
               </p>
             </div>
           </div>
-          <ArrowRight className="w-6 h-6 text-brand-text-muted group-hover:text-brand-orange transition-colors" />
+          <ArrowRight className="w-6 h-6 text-brand-text-muted group-hover:text-brand-orange" />
         </Link>
 
         <Link
           to="/browse"
-          className="card p-6 flex items-center justify-between group border-2 border-transparent hover:border-blue-500/30 transition-all bg-gradient-to-br from-brand-card to-brand-surface"
+          className="card p-6 flex items-center justify-between group hover:border-blue-500/30 bg-gradient-to-br from-brand-card to-brand-surface"
         >
           <div className="flex items-center space-x-5">
             <div className="p-4 bg-blue-500/10 rounded-2xl group-hover:bg-blue-500 group-hover:text-white text-blue-400 transition-colors">
@@ -177,38 +196,31 @@ const Dashboard = () => {
               <p className="font-bold text-xl text-white mb-1">
                 Browse Live Tasks
               </p>
-              <p className="text-sm text-brand-text-secondary leading-relaxed">
-                Find tasks that match your skills and earn project experiences.
+              <p className="text-sm text-brand-text-secondary">
+                Find tasks and earn credits.
               </p>
             </div>
           </div>
-          <ArrowRight className="w-6 h-6 text-brand-text-muted group-hover:text-blue-400 transition-colors" />
+          <ArrowRight className="w-6 h-6 text-brand-text-muted group-hover:text-blue-400" />
         </Link>
       </div>
 
       {/* Tasks Section */}
       <div className="card overflow-hidden p-0 border-brand-border/30">
-        {/* Tabs */}
         <div className="bg-brand-surface/30 px-6 border-b border-brand-border">
           <div className="flex">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-8 py-5 font-bold text-xs uppercase tracking-widest transition-all relative ${
+                className={`px-8 py-5 font-bold text-xs uppercase tracking-widest relative ${
                   activeTab === tab.id
                     ? "text-brand-orange"
-                    : "text-brand-text-muted hover:text-brand-text-secondary"
+                    : "text-brand-text-muted"
                 }`}
               >
                 {tab.label}
-                <span
-                  className={`ml-3 px-2 py-0.5 rounded-md text-[10px] ${
-                    activeTab === tab.id
-                      ? "bg-brand-orange text-white"
-                      : "bg-brand-border text-brand-text-muted"
-                  }`}
-                >
+                <span className="ml-3 px-2 py-0.5 rounded-md text-[10px] bg-brand-border">
                   {tab.count}
                 </span>
                 {activeTab === tab.id && (
@@ -219,53 +231,61 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Tasks List */}
         <div className="p-8">
-          {activeTab === "posted" && (
-            <>
-              {tasks.posted.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {tasks.posted.slice(0, 6).map((task) => (
-                    <TaskCard key={task._id} task={task} />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  title="No tasks posted yet"
-                  description="Start by posting a task for students to work on."
-                  action={
-                    <Link to="/post-task" className="btn-primary">
-                      Post your first task
-                    </Link>
-                  }
-                />
-              )}
-            </>
-          )}
-
-          {activeTab === "taken" && (
-            <>
-              {tasks.taken.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {tasks.taken.slice(0, 6).map((task) => (
-                    <TaskCard key={task._id} task={task} />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  title="No tasks taken yet"
-                  description="Browse available tasks and start building your reputation!"
-                  action={
-                    <Link to="/browse" className="btn-primary">
-                      Explore tasks
-                    </Link>
-                  }
-                />
-              )}
-            </>
+          {activeTab === "posted" ? (
+            tasks.posted.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {tasks.posted.map((task) => (
+                  <TaskCard
+                    key={task._id}
+                    task={task}
+                    isOwner={true}
+                    onEdit={() => handleEditTask(task)}
+                    onDelete={() => handleDeleteTask(task._id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No tasks posted"
+                action={
+                  <Link to="/post-task" className="btn-primary">
+                    Post Task
+                  </Link>
+                }
+              />
+            )
+          ) : tasks.taken.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {tasks.taken.map((task) => (
+                <TaskCard key={task._id} task={task} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No tasks taken"
+              action={
+                <Link to="/browse" className="btn-primary">
+                  Browse Tasks
+                </Link>
+              }
+            />
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      {showEditModal && (
+        <EditTaskModal
+          task={editingTask}
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingTask(null);
+          }}
+          onSuccess={handleEditSuccess}
+        />
+      )}
     </div>
   );
 };

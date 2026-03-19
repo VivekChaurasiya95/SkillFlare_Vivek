@@ -1,16 +1,16 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
-import { ButtonLoading } from '../components/Loading';
-import { isAllowedEmailDomain } from '../utils/helpers';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Eye, EyeOff, Mail, Lock, LogIn } from "lucide-react";
+import { ButtonLoading } from "../components/Loading";
+import { isAllowedEmailDomain } from "../utils/helpers";
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ const Login = () => {
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
-        [name]: '',
+        [name]: "",
       }));
     }
   };
@@ -34,14 +34,15 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = "Please enter a valid email";
     } else if (!isAllowedEmailDomain(formData.email)) {
-      newErrors.email = 'Only @mitsgwalior.in (Faculty) and @mitsgwl.ac.in (Student) emails are allowed';
+      newErrors.email =
+        "Only @mitsgwalior.in (Faculty) and @mitsgwl.ac.in (Student) emails are allowed";
     }
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -54,7 +55,7 @@ const Login = () => {
     try {
       setLoading(true);
       await login(formData.email, formData.password);
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error) {
       // Error is handled in AuthContext
     } finally {
@@ -83,7 +84,10 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-brand-text-secondary mb-2 ml-1">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-brand-text-secondary mb-2 ml-1"
+              >
                 Email Address
               </label>
               <div className="relative group">
@@ -97,18 +101,23 @@ const Login = () => {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`input pl-12 ${errors.email ? 'border-red-500/50 focus:border-red-500/50' : ''}`}
+                  className={`input pl-12 ${errors.email ? "border-red-500/50 focus:border-red-500/50" : ""}`}
                   placeholder="you@mits.ac.in"
                 />
               </div>
               {errors.email && (
-                <p className="mt-1.5 text-xs font-medium text-red-400 ml-1">{errors.email}</p>
+                <p className="mt-1.5 text-xs font-medium text-red-400 ml-1">
+                  {errors.email}
+                </p>
               )}
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-brand-text-secondary mb-2 ml-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-brand-text-secondary mb-2 ml-1"
+              >
                 Password
               </label>
               <div className="relative group">
@@ -118,11 +127,11 @@ const Login = () => {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`input pl-12 pr-10 ${errors.password ? 'border-red-500/50 focus:border-red-500/50' : ''}`}
+                  className={`input pl-12 pr-10 ${errors.password ? "border-red-500/50 focus:border-red-500/50" : ""}`}
                   placeholder="Enter your password"
                 />
                 <button
@@ -138,8 +147,20 @@ const Login = () => {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1.5 text-xs font-medium text-red-400 ml-1">{errors.password}</p>
+                <p className="mt-1.5 text-xs font-medium text-red-400 ml-1">
+                  {errors.password}
+                </p>
               )}
+            </div>
+
+            {/* Forgot Password Link */}
+            <div className="text-right">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-brand-orange hover:text-brand-orange-hover transition-colors font-medium"
+              >
+                Forgot password?
+              </Link>
             </div>
 
             {/* Submit */}
@@ -148,14 +169,14 @@ const Login = () => {
               disabled={loading}
               className="btn-primary w-full py-4 font-bold shadow-glow"
             >
-              {loading ? <ButtonLoading /> : 'Sign In'}
+              {loading ? <ButtonLoading /> : "Sign In"}
             </button>
           </form>
 
           {/* Footer */}
           <div className="mt-8 text-center pt-6 border-t border-brand-border/50">
             <p className="text-brand-text-secondary">
-              Don't have an account?{' '}
+              Don't have an account?{" "}
               <Link
                 to="/register"
                 className="text-brand-orange font-bold hover:underline"

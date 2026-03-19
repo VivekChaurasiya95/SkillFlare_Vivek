@@ -1,12 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
-import { AIChat } from "./index.js";
 import {
   Menu,
   X,
-  Sun,
-  Moon,
   User,
   LogOut,
   LayoutDashboard,
@@ -14,18 +10,17 @@ import {
   Search,
   Trophy,
   ChevronDown,
-  MessageCircle,
+  Shield,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { isAdminUser } from "../utils/adminConfig";
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
-  const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [showAIChat, setShowAIChat] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -108,25 +103,6 @@ const Navbar = () => {
 
           {/* Right side */}
           <div className="flex items-center space-x-3">
-            {/* AI Chat Button */}
-            {isAuthenticated && (
-              <button
-                onClick={() => setShowAIChat(!showAIChat)}
-                className="p-2 rounded-full text-gray-400 hover:text-brand-orange hover:bg-white/10 transition-colors hidden sm:flex items-center justify-center"
-                title="Open AI Assistant"
-              >
-                <MessageCircle size={20} />
-              </button>
-            )}
-
-            {/* Theme toggle - Hidden for now as we are dark-first, but kept for logic */}
-            {/* <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button> */}
-
             {isAuthenticated ? (
               /* Profile dropdown */
               <div className="relative">
@@ -151,12 +127,14 @@ const Navbar = () => {
                       </p>
                       <span
                         className={`mt-2 inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${
-                          user?.role === "teacher"
-                            ? "bg-brand-orange/20 text-brand-orange"
-                            : "bg-blue-500/20 text-blue-400"
+                          isAdminUser(user)
+                            ? "bg-purple-500/20 text-purple-400"
+                            : user?.role === "teacher"
+                              ? "bg-brand-orange/20 text-brand-orange"
+                              : "bg-blue-500/20 text-blue-400"
                         }`}
                       >
-                        {user?.role}
+                        {isAdminUser(user) ? "ADMIN" : user?.role}
                       </span>
                     </div>
 
@@ -179,6 +157,23 @@ const Navbar = () => {
                       <User size={18} />
                       <span>Profile</span>
                     </Link>
+
+                    {isAdminUser(user) && (
+                      <>
+                        <div className="h-px bg-brand-border my-2 mx-4" />
+                        <Link
+                          to="/admin"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-4 py-2 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 transition-colors"
+                        >
+                          <Shield size={18} />
+                          <span>Admin Panel</span>
+                        </Link>
+                      </>
+                    )}
+
+                    <div className="h-px bg-brand-border my-2 mx-4" />
+
                     <button
                       onClick={handleLogout}
                       className="flex items-center space-x-3 px-4 py-2 text-red-400 hover:bg-red-500/10 hover:text-red-300 w-full transition-colors"
@@ -253,6 +248,19 @@ const Navbar = () => {
                     </Link>
                   ))}
                   <div className="h-px bg-brand-border my-2" />
+                  {isAdminUser(user) && (
+                    <>
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-4 py-3 text-purple-400 hover:bg-purple-500/10 rounded-xl"
+                      >
+                        <Shield size={20} />
+                        <span>Admin Panel</span>
+                      </Link>
+                      <div className="h-px bg-brand-border my-2" />
+                    </>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl w-full"
@@ -279,15 +287,6 @@ const Navbar = () => {
                   </Link>
                 </div>
               )}
-            </div>
-          </div>
-        )}
-
-        {/* AI Chat Modal */}
-        {showAIChat && (
-          <div className="ai-modal-overlay">
-            <div className="ai-modal-container">
-              <AIChat onClose={() => setShowAIChat(false)} />
             </div>
           </div>
         )}

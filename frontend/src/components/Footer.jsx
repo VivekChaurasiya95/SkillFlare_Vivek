@@ -24,17 +24,7 @@ const Footer = () => {
               MITS SkillFlare connects students and teachers to create a
               thriving ecosystem of learning, collaboration, and growth.
             </p>
-            <div className="flex space-x-4 pt-4">
-              {[Github, Twitter, Linkedin, Facebook].map((Icon, idx) => (
-                <a
-                  key={idx}
-                  href="#"
-                  className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-brand-orange hover:text-white transition-all duration-300"
-                >
-                  <Icon size={18} />
-                </a>
-              ))}
-            </div>
+            
           </div>
 
           {/* Platform */}
@@ -70,9 +60,9 @@ const Footer = () => {
               <li className="flex items-start space-x-3 text-gray-400">
                 <Mail size={20} className="mt-1 text-brand-orange" />
                 <span>
-                  mites@mitsgwalior.in
+                  dargarkrish@gmail.com
                   <br />
-                  +91 123 456 7890
+
                 </span>
               </li>
               <li className="text-gray-500 text-sm">

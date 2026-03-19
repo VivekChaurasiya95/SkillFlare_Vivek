@@ -27,9 +27,27 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["teacher", "student"],
+      enum: ["teacher", "student", "admin"],
       required: [true, "Please select a role"],
     },
+    isBanned: {
+      type: Boolean,
+      default: false,
+    },
+    isSuspended: {
+      type: Boolean,
+      default: false,
+    },
+    activityLogs: [
+      {
+        action: String,
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+        details: String,
+      },
+    ],
     bio: {
       type: String,
       maxlength: [500, "Bio cannot be more than 500 characters"],
@@ -96,6 +114,16 @@ const userSchema = new mongoose.Schema(
     isMentor: {
       type: Boolean,
       default: false,
+    },
+    resetToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    resetTokenExpiry: {
+      type: Date,
+      default: null,
+      select: false,
     },
   },
   {
